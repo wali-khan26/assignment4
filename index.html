@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Medical Insurance Cost Explorer</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div id="header-left">
+    <div id="header-title">Insurance Cost Explorer</div>
+    <div id="header-sub">Medical Insurance Dataset · <span id="row-count">1,338</span> records · 7 Interaction Types</div>
+  </div>
+  <div id="header-tags">
+    <span class="htag select">SELECT</span>
+    <span class="htag filter">FILTER</span>
+    <span class="htag encode">ENCODE</span>
+    <span class="htag connect">CONNECT</span>
+    <span class="htag reconfigure">RECONFIGURE</span>
+    <span class="htag elaborate">ELABORATE</span>
+    <span class="htag abstract">ABSTRACT</span>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- LEFT PANEL -->
+  <div id="left-panel">
+
+    <!-- ENCODE -->
+    <div class="section-title">Encode <span class="stag">ENCODE</span></div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">X Axis</div>
+      <select id="sel-x">
+        <option value="age">Age</option>
+        <option value="bmi">BMI</option>
+        <option value="charges" selected>Charges (USD)</option>
+        <option value="children">Children</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Y Axis</div>
+      <select id="sel-y">
+        <option value="charges" selected>Charges (USD)</option>
+        <option value="age">Age</option>
+        <option value="bmi">BMI</option>
+        <option value="children">Children</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Color By</div>
+      <select id="sel-color">
+        <option value="smoker">Smoker Status</option>
+        <option value="region">Region</option>
+        <option value="sex">Sex</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Bubble Size</div>
+      <select id="sel-size">
+        <option value="bmi">BMI</option>
+        <option value="age">Age</option>
+        <option value="children">Children</option>
+        <option value="fixed">Fixed</option>
+      </select>
+    </div>
+
+    <!-- FILTER -->
+    <div class="section-title" style="margin-top:18px">Filter <span class="stag">FILTER</span></div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Age Range: <span id="age-label">18 – 64</span></div>
+      <div class="dual-range">
+        <input type="range" id="age-min" min="18" max="64" value="18"/>
+        <input type="range" id="age-max" min="18" max="64" value="64"/>
+      </div>
+      <div class="range-vals"><span>18</span><span>64</span></div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">BMI Range: <span id="bmi-label">15 – 54</span></div>
+      <div class="dual-range">
+        <input type="range" id="bmi-min" min="15" max="54" value="15"/>
+        <input type="range" id="bmi-max" min="15" max="54" value="54"/>
+      </div>
+      <div class="range-vals"><span>15</span><span>54</span></div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Smoker</div>
+      <div class="btn-group" id="smoker-filter">
+        <button class="flt-btn active" data-val="all">All</button>
+        <button class="flt-btn" data-val="yes">Smokers</button>
+        <button class="flt-btn" data-val="no">Non-Smokers</button>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Sex</div>
+      <div class="btn-group" id="sex-filter">
+        <button class="flt-btn active" data-val="all">All</button>
+        <button class="flt-btn" data-val="male">Male</button>
+        <button class="flt-btn" data-val="female">Female</button>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Region</div>
+      <div id="region-filter">
+        <button class="flt-btn reg-btn active" data-val="all">All Regions</button>
+        <button class="flt-btn reg-btn" data-val="northeast">Northeast</button>
+        <button class="flt-btn reg-btn" data-val="northwest">Northwest</button>
+        <button class="flt-btn reg-btn" data-val="southeast">Southeast</button>
+        <button class="flt-btn reg-btn" data-val="southwest">Southwest</button>
+      </div>
+    </div>
+
+    <!-- RECONFIGURE -->
+    <div class="section-title" style="margin-top:18px">Reconfigure <span class="stag">RECONFIGURE</span></div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Scale Type</div>
+      <div class="btn-group">
+        <button class="flt-btn active" id="scale-linear">Linear</button>
+        <button class="flt-btn" id="scale-log">Log</button>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Sort Bar Chart By</div>
+      <select id="sel-sort">
+        <option value="value">Value (High→Low)</option>
+        <option value="alpha">Alphabetical</option>
+        <option value="value-asc">Value (Low→High)</option>
+      </select>
+    </div>
+
+  </div><!-- /left-panel -->
+
+  <!-- CENTER -->
+  <div id="center">
+
+    <!-- TOOLBAR -->
+    <div id="toolbar">
+      <span class="tool-label">VIEW:</span>
+      <button class="view-btn active" id="btn-scatter">Scatter Plot</button>
+      <button class="view-btn" id="btn-table">Data Table</button>
+      <div class="divider"></div>
+      <span class="tool-label">ABSTRACT:</span>
+      <button class="view-btn active" id="btn-individual">Individual</button>
+      <button class="view-btn" id="btn-aggregate">Group Avg</button>
+      <div class="divider"></div>
+      <span id="active-count" class="count-badge">— records shown</span>
+      <div style="flex:1"></div>
+      <span class="tool-label hint-label">← Drag chart to brush-select</span>
+    </div>
+
+    <!-- SCATTER VIEW -->
+    <div id="scatter-view">
+      <div id="scatter-container">
+        <svg id="scatter-svg"></svg>
+        <div id="tooltip"></div>
+      </div>
+
+      <!-- BOTTOM CHARTS -->
+      <div id="bottom-bar">
+        <div class="bottom-chart" id="hist-wrap">
+          <div class="chart-title">Distribution of X-Axis Variable <span class="stag">CONNECT</span></div>
+          <svg id="hist-svg"></svg>
+        </div>
+        <div class="bottom-chart" id="bar-wrap">
+          <div class="chart-title">Average Charges by Group <span class="stag">ABSTRACT</span></div>
+          <svg id="bar-svg"></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE VIEW -->
+    <div id="table-view">
+      <table id="data-table">
+        <thead>
+          <tr>
+            <th data-col="age">Age ↕</th>
+            <th data-col="sex">Sex</th>
+            <th data-col="bmi">BMI ↕</th>
+            <th data-col="children">Children ↕</th>
+            <th data-col="smoker">Smoker</th>
+            <th data-col="region">Region</th>
+            <th data-col="charges">Charges ↕</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /center -->
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+
+    <div class="section-title">Selection <span class="stag">SELECT</span></div>
+    <div id="selection-panel">
+      <div class="hint-text">Click any dot to select.<br>Drag on chart to brush-select multiple.</div>
+    </div>
+
+    <div class="section-title" style="margin-top:18px">Detail View <span class="stag">ELABORATE</span></div>
+    <div id="detail-panel">
+      <div class="hint-text">Hover over a dot to see full details here.</div>
+    </div>
+
+  </div><!-- /right-panel -->
+
+</div><!-- /app -->
+
+<script src="main.js"></script>
+</body>
+</html>
