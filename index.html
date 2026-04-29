@@ -1,222 +1,563 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Medical Insurance Cost Explorer</title>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css"/>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>A4 — Tree & Graph Visualization | Wali Muhammad Khan</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#080b14;--surface:#0f1420;--surface2:#161c2e;--border:#1e2640;
+  --accent:#f0c060;--accent2:#60c8f0;--accent3:#f07080;--accent4:#80f0b0;
+  --text:#dde2f0;--text-dim:#5a6080;
+  --font-h:'Playfair Display',serif;--font-m:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-m);font-size:13px;overflow-x:hidden;}
+
+#site-header{padding:48px 60px 36px;border-bottom:1px solid var(--border);background:var(--surface);position:relative;overflow:hidden;}
+#site-header::before{content:'';position:absolute;top:-60px;right:-60px;width:300px;height:300px;background:radial-gradient(circle,rgba(240,192,96,0.06) 0%,transparent 70%);border-radius:50%;}
+.header-badge{font-size:0.6rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(240,192,96,0.3);padding:4px 12px;border-radius:2px;display:inline-block;margin-bottom:14px;}
+#site-header h1{font-family:var(--font-h);font-size:2.8rem;font-weight:900;color:var(--text);line-height:1.05;margin-bottom:10px;letter-spacing:-0.02em;}
+#site-header h1 span{color:var(--accent);}
+.header-meta{font-size:0.7rem;color:var(--text-dim);display:flex;gap:24px;flex-wrap:wrap;margin-top:16px;}
+.header-meta strong{color:var(--text);}
+
+nav{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100;overflow-x:auto;}
+nav a{padding:14px 22px;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);text-decoration:none;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;}
+nav a:hover{color:var(--text);border-bottom-color:var(--border);}
+nav a.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+.section{padding:56px 60px;border-bottom:1px solid var(--border);}
+.section:nth-child(even){background:var(--surface);}
+.section-label{font-size:0.58rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.section-title{font-family:var(--font-h);font-size:1.8rem;font-weight:700;color:var(--text);margin-bottom:8px;}
+.section-desc{font-size:0.75rem;color:var(--text-dim);line-height:1.8;max-width:720px;}
+.section-desc strong{color:var(--accent2);}
+
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0 28px;}
+.info-card{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:18px 20px;}
+.info-card-label{font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;}
+.info-card-value{font-size:0.78rem;color:var(--text);line-height:1.6;}
+.info-card-value strong{color:var(--accent);}
+
+.viz-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:24px;}
+.viz-toolbar{padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.viz-title{font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);font-weight:500;}
+.viz-tag{font-size:0.55rem;padding:2px 7px;border-radius:2px;letter-spacing:0.06em;}
+.tag-tree{background:rgba(128,240,176,0.12);color:var(--accent4);border:1px solid rgba(128,240,176,0.25);}
+.tag-graph{background:rgba(96,200,240,0.12);color:var(--accent2);border:1px solid rgba(96,200,240,0.25);}
+.tag-layout{background:rgba(240,192,96,0.12);color:var(--accent);border:1px solid rgba(240,192,96,0.25);}
+.viz-hint{margin-left:auto;font-size:0.6rem;color:var(--text-dim);font-style:italic;}
+svg.viz{display:block;width:100%;}
+
+.legend{display:flex;gap:14px;flex-wrap:wrap;padding:12px 16px;background:var(--surface);border-top:1px solid var(--border);}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:0.62rem;color:var(--text-dim);}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+.tooltip{position:fixed;background:var(--surface);border:1px solid var(--accent);padding:10px 14px;border-radius:3px;pointer-events:none;font-size:0.7rem;line-height:1.7;z-index:999;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.6);max-width:210px;}
+.tooltip-name{font-family:var(--font-h);font-size:0.95rem;color:var(--accent);margin-bottom:4px;font-weight:700;}
+.tooltip-row{color:var(--text-dim);}
+.tooltip-row span{color:var(--text);}
+
+footer{padding:32px 60px;background:var(--surface);font-size:0.65rem;color:var(--text-dim);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+footer a{color:var(--accent2);text-decoration:none;}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+@media(max-width:768px){
+  #site-header,.section,footer{padding-left:20px;padding-right:20px;}
+  #site-header h1{font-size:1.8rem;}
+  .info-grid{grid-template-columns:1fr;}
+}
+</style>
 </head>
 <body>
 
-<!-- HEADER -->
-<div id="header">
-  <div id="header-left">
-    <div id="header-title">Insurance Cost Explorer</div>
-    <div id="header-sub">Medical Insurance Dataset · <span id="row-count">1,338</span> records · 7 Interaction Types</div>
-  </div>
-  <div id="header-tags">
-    <span class="htag select">SELECT</span>
-    <span class="htag filter">FILTER</span>
-    <span class="htag encode">ENCODE</span>
-    <span class="htag connect">CONNECT</span>
-    <span class="htag reconfigure">RECONFIGURE</span>
-    <span class="htag elaborate">ELABORATE</span>
-    <span class="htag abstract">ABSTRACT</span>
+<div class="tooltip" id="tooltip">
+  <div class="tooltip-name" id="tt-name"></div>
+  <div id="tt-body"></div>
+</div>
+
+<div id="site-header">
+  <div class="header-badge">Assignment 4 · Data Visualization</div>
+  <h1>Tree & Graph<br/><span>Visualization</span></h1>
+  <div class="header-meta">
+    <span>👤 <strong>Wali Muhammad Khan</strong></span>
+    <span>🆔 <strong>2023753</strong></span>
+    <span>🌳 <strong>2 Tree Layouts</strong></span>
+    <span>🕸 <strong>2 Graph Layouts</strong></span>
   </div>
 </div>
 
-<!-- APP -->
-<div id="app">
+<nav>
+  <a href="#tree1" class="active">Tree: Hierarchical</a>
+  <a href="#tree2">Tree: Radial</a>
+  <a href="#graph1">Graph: Force-Directed</a>
+  <a href="#graph2">Graph: Circular</a>
+</nav>
 
-  <!-- LEFT PANEL -->
-  <div id="left-panel">
+<!-- TREE SECTION -->
+<div class="section" id="tree-section">
+  <div class="section-label">Dataset 1 — Tree Visualization</div>
+  <div class="section-title">Animal Kingdom Taxonomy</div>
+  <div class="section-desc">
+    Biological classification of animals from <strong>Kingdom → Phylum → Class → Order → Family → Genus → Species</strong>.
+    Source: Encyclopedia of Life / Standard Biological Classification.<br/><br/>
+    <strong>Nodes</strong> represent taxonomic ranks. <strong>Edges</strong> represent parent-child relationships between ranks.
+    Ideal for tree visualization: single root (Animalia), no cycles, strict hierarchy.
+  </div>
 
-    <!-- ENCODE -->
-    <div class="section-title">Encode <span class="stag">ENCODE</span></div>
-    <div class="ctrl-group">
-      <div class="ctrl-label">X Axis</div>
-      <select id="sel-x">
-        <option value="age">Age</option>
-        <option value="bmi">BMI</option>
-        <option value="charges" selected>Charges (USD)</option>
-        <option value="children">Children</option>
-      </select>
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-card-label">Nodes</div>
+      <div class="info-card-value">Taxonomic ranks — <strong>Kingdom, Phylum, Class, Order, Family, Genus, Species</strong></div>
     </div>
-    <div class="ctrl-group">
-      <div class="ctrl-label">Y Axis</div>
-      <select id="sel-y">
-        <option value="charges" selected>Charges (USD)</option>
-        <option value="age">Age</option>
-        <option value="bmi">BMI</option>
-        <option value="children">Children</option>
-      </select>
+    <div class="info-card">
+      <div class="info-card-label">Edges</div>
+      <div class="info-card-value">Parent → child relationships between adjacent taxonomic levels</div>
     </div>
-    <div class="ctrl-group">
-      <div class="ctrl-label">Color By</div>
-      <select id="sel-color">
-        <option value="smoker">Smoker Status</option>
-        <option value="region">Region</option>
-        <option value="sex">Sex</option>
-      </select>
+  </div>
+
+  <div class="viz-wrap" id="tree1">
+    <div class="viz-toolbar">
+      <span class="viz-title">Layout 1 — Top-Down Hierarchical</span>
+      <span class="viz-tag tag-tree">TREE</span>
+      <span class="viz-tag tag-layout">HIERARCHICAL</span>
+      <span class="viz-hint">Hover nodes for details</span>
     </div>
-    <div class="ctrl-group">
-      <div class="ctrl-label">Bubble Size</div>
-      <select id="sel-size">
-        <option value="bmi">BMI</option>
-        <option value="age">Age</option>
-        <option value="children">Children</option>
-        <option value="fixed">Fixed</option>
-      </select>
+    <svg class="viz" id="svg-tree1" height="560"></svg>
+    <div class="legend" id="legend-tree1"></div>
+  </div>
+
+  <div class="viz-wrap" id="tree2">
+    <div class="viz-toolbar">
+      <span class="viz-title">Layout 2 — Radial / Circular</span>
+      <span class="viz-tag tag-tree">TREE</span>
+      <span class="viz-tag tag-layout">RADIAL</span>
+      <span class="viz-hint">Hover nodes for details</span>
     </div>
+    <svg class="viz" id="svg-tree2" height="640"></svg>
+    <div class="legend" id="legend-tree2"></div>
+  </div>
+</div>
 
-    <!-- FILTER -->
-    <div class="section-title" style="margin-top:18px">Filter <span class="stag">FILTER</span></div>
+<!-- GRAPH SECTION -->
+<div class="section" id="graph-section">
+  <div class="section-label">Dataset 2 — Graph Visualization</div>
+  <div class="section-title">Les Misérables Character Network</div>
+  <div class="section-desc">
+    Co-appearance network of characters in Victor Hugo's novel <strong>Les Misérables</strong>.
+    Source: D.E. Knuth, <em>The Stanford GraphBase</em> (1993).<br/><br/>
+    <strong>Nodes</strong> represent characters. <strong>Edges</strong> connect characters who appear in the same scene.
+    <strong>Edge weight</strong> = number of co-appearances. Ideal for graph: has cycles, multiple paths, weighted edges.
+  </div>
 
-    <div class="ctrl-group">
-      <div class="ctrl-label">Age Range: <span id="age-label">18 – 64</span></div>
-      <div class="dual-range">
-        <input type="range" id="age-min" min="18" max="64" value="18"/>
-        <input type="range" id="age-max" min="18" max="64" value="64"/>
-      </div>
-      <div class="range-vals"><span>18</span><span>64</span></div>
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-card-label">Nodes</div>
+      <div class="info-card-value">Characters in the novel — <strong>node size = degree centrality</strong></div>
     </div>
-
-    <div class="ctrl-group">
-      <div class="ctrl-label">BMI Range: <span id="bmi-label">15 – 54</span></div>
-      <div class="dual-range">
-        <input type="range" id="bmi-min" min="15" max="54" value="15"/>
-        <input type="range" id="bmi-max" min="15" max="54" value="54"/>
-      </div>
-      <div class="range-vals"><span>15</span><span>54</span></div>
+    <div class="info-card">
+      <div class="info-card-label">Edges</div>
+      <div class="info-card-value">Co-appearances in same scene — <strong>edge thickness = frequency</strong></div>
     </div>
+  </div>
 
-    <div class="ctrl-group">
-      <div class="ctrl-label">Smoker</div>
-      <div class="btn-group" id="smoker-filter">
-        <button class="flt-btn active" data-val="all">All</button>
-        <button class="flt-btn" data-val="yes">Smokers</button>
-        <button class="flt-btn" data-val="no">Non-Smokers</button>
-      </div>
+  <div class="viz-wrap" id="graph1">
+    <div class="viz-toolbar">
+      <span class="viz-title">Layout 1 — Force-Directed (Spring)</span>
+      <span class="viz-tag tag-graph">GRAPH</span>
+      <span class="viz-tag tag-layout">FORCE-DIRECTED</span>
+      <span class="viz-hint">Drag nodes · Hover for details · Scroll to zoom</span>
     </div>
+    <svg class="viz" id="svg-graph1" height="580"></svg>
+    <div class="legend" id="legend-graph1"></div>
+  </div>
 
-    <div class="ctrl-group">
-      <div class="ctrl-label">Sex</div>
-      <div class="btn-group" id="sex-filter">
-        <button class="flt-btn active" data-val="all">All</button>
-        <button class="flt-btn" data-val="male">Male</button>
-        <button class="flt-btn" data-val="female">Female</button>
-      </div>
+  <div class="viz-wrap" id="graph2">
+    <div class="viz-toolbar">
+      <span class="viz-title">Layout 2 — Circular (Community Grouped)</span>
+      <span class="viz-tag tag-graph">GRAPH</span>
+      <span class="viz-tag tag-layout">CIRCULAR</span>
+      <span class="viz-hint">Hover nodes to highlight connections</span>
     </div>
+    <svg class="viz" id="svg-graph2" height="580"></svg>
+    <div class="legend" id="legend-graph2"></div>
+  </div>
+</div>
 
-    <div class="ctrl-group">
-      <div class="ctrl-label">Region</div>
-      <div id="region-filter">
-        <button class="flt-btn reg-btn active" data-val="all">All Regions</button>
-        <button class="flt-btn reg-btn" data-val="northeast">Northeast</button>
-        <button class="flt-btn reg-btn" data-val="northwest">Northwest</button>
-        <button class="flt-btn reg-btn" data-val="southeast">Southeast</button>
-        <button class="flt-btn reg-btn" data-val="southwest">Southwest</button>
-      </div>
-    </div>
+<footer>
+  <div>Assignment 4 · Tree & Graph Visualization · Wali Muhammad Khan · 2023753</div>
+  <div>Built with <a href="https://d3js.org" target="_blank">D3.js v7</a></div>
+</footer>
 
-    <!-- RECONFIGURE -->
-    <div class="section-title" style="margin-top:18px">Reconfigure <span class="stag">RECONFIGURE</span></div>
-    <div class="ctrl-group">
-      <div class="ctrl-label">Scale Type</div>
-      <div class="btn-group">
-        <button class="flt-btn active" id="scale-linear">Linear</button>
-        <button class="flt-btn" id="scale-log">Log</button>
-      </div>
-    </div>
-    <div class="ctrl-group">
-      <div class="ctrl-label">Sort Bar Chart By</div>
-      <select id="sel-sort">
-        <option value="value">Value (High→Low)</option>
-        <option value="alpha">Alphabetical</option>
-        <option value="value-asc">Value (Low→High)</option>
-      </select>
-    </div>
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+const TAXONOMY_EDGES = [
+  ['Animalia','Chordata'],['Animalia','Arthropoda'],['Animalia','Mollusca'],
+  ['Chordata','Mammalia'],['Chordata','Aves'],['Chordata','Reptilia'],['Chordata','Actinopterygii'],
+  ['Arthropoda','Insecta'],['Arthropoda','Arachnida'],['Arthropoda','Crustacea'],
+  ['Mollusca','Gastropoda'],['Mollusca','Cephalopoda'],
+  ['Mammalia','Primates'],['Mammalia','Carnivora'],['Mammalia','Cetacea'],['Mammalia','Rodentia'],
+  ['Aves','Passeriformes'],['Aves','Falconiformes'],
+  ['Reptilia','Squamata'],['Reptilia','Crocodilia'],
+  ['Insecta','Lepidoptera'],['Insecta','Coleoptera'],
+  ['Primates','Hominidae'],['Primates','Cercopithecidae'],
+  ['Carnivora','Felidae'],['Carnivora','Canidae'],['Carnivora','Ursidae'],
+  ['Cetacea','Delphinidae'],['Cetacea','Balaenidae'],
+  ['Hominidae','Homo'],['Hominidae','Pan'],['Hominidae','Gorilla'],
+  ['Felidae','Panthera'],['Felidae','Felis'],
+  ['Canidae','Canis'],['Canidae','Vulpes'],
+  ['Homo','Homo sapiens'],['Homo','Homo erectus'],
+  ['Panthera','P. leo (Lion)'],['Panthera','P. tigris (Tiger)'],['Panthera','P. pardus (Leopard)'],
+  ['Canis','C. lupus (Wolf)'],['Canis','C. familiaris (Dog)'],
+  ['Delphinidae','Orca'],['Delphinidae','Bottlenose Dolphin'],
+  ['Lepidoptera','Papilio (Butterfly)'],['Lepidoptera','Bombyx (Silk Moth)'],
+  ['Passeriformes','Turdus (Robin)'],['Passeriformes','Passer (Sparrow)'],
+  ['Squamata','Python'],['Squamata','Iguana'],
+];
 
-  </div><!-- /left-panel -->
+const LEVEL_MAP = {
+  'Animalia':0,'Chordata':1,'Arthropoda':1,'Mollusca':1,
+  'Mammalia':2,'Aves':2,'Reptilia':2,'Actinopterygii':2,
+  'Insecta':2,'Arachnida':2,'Crustacea':2,'Gastropoda':2,'Cephalopoda':2,
+  'Primates':3,'Carnivora':3,'Cetacea':3,'Rodentia':3,
+  'Passeriformes':3,'Falconiformes':3,'Squamata':3,'Crocodilia':3,'Lepidoptera':3,'Coleoptera':3,
+  'Hominidae':4,'Cercopithecidae':4,'Felidae':4,'Canidae':4,'Ursidae':4,'Delphinidae':4,'Balaenidae':4,
+  'Homo':5,'Pan':5,'Gorilla':5,'Panthera':5,'Felis':5,'Canis':5,'Vulpes':5,
+  'Homo sapiens':6,'Homo erectus':6,'P. leo (Lion)':6,'P. tigris (Tiger)':6,'P. pardus (Leopard)':6,
+  'C. lupus (Wolf)':6,'C. familiaris (Dog)':6,'Orca':6,'Bottlenose Dolphin':6,
+  'Papilio (Butterfly)':6,'Bombyx (Silk Moth)':6,'Turdus (Robin)':6,'Passer (Sparrow)':6,
+  'Python':6,'Iguana':6,
+};
+const LEVEL_COLORS=['#e63946','#f4a261','#2a9d8f','#457b9d','#a8dadc','#c77dff','#b5e48c'];
+const LEVEL_NAMES=['Kingdom','Phylum','Class','Order','Family','Genus','Species'];
+const tColor=n=>LEVEL_COLORS[LEVEL_MAP[n]??3];
+const tSize=n=>{const l=LEVEL_MAP[n]??3;return l===0?14:l<=2?10:l<=4?7:5;};
 
-  <!-- CENTER -->
-  <div id="center">
+const LES_NODES=[
+  'Valjean','Myriel','Baptistine','Magloire','Geborand','Champtercier',
+  'Fantine','Javert','Cosette','Marius','Thenardier','Enjolras',
+  'Gavroche','Gillenormand','Pontmercy','Fauchelevent','Bamatabois',
+  'Toussaint','Courfeyrac','Combeferre','Bossuet','Joly','Grantaire',
+  'Feuilly','Bahorel','Azelma','Marguerite','Simplice','Perpetue','Magnon'
+].map(id=>({id}));
 
-    <!-- TOOLBAR -->
-    <div id="toolbar">
-      <span class="tool-label">VIEW:</span>
-      <button class="view-btn active" id="btn-scatter">Scatter Plot</button>
-      <button class="view-btn" id="btn-table">Data Table</button>
-      <div class="divider"></div>
-      <span class="tool-label">ABSTRACT:</span>
-      <button class="view-btn active" id="btn-individual">Individual</button>
-      <button class="view-btn" id="btn-aggregate">Group Avg</button>
-      <div class="divider"></div>
-      <span id="active-count" class="count-badge">— records shown</span>
-      <div style="flex:1"></div>
-      <span class="tool-label hint-label">← Drag chart to brush-select</span>
-    </div>
+const LES_LINKS=[
+  ['Valjean','Myriel',5],['Valjean','Fantine',6],['Valjean','Javert',11],
+  ['Valjean','Cosette',10],['Valjean','Marius',8],['Valjean','Thenardier',7],
+  ['Valjean','Enjolras',4],['Valjean','Gavroche',4],['Valjean','Gillenormand',3],
+  ['Valjean','Fauchelevent',4],['Valjean','Toussaint',3],['Valjean','Bamatabois',2],
+  ['Myriel','Baptistine',8],['Myriel','Magloire',10],['Myriel','Geborand',6],
+  ['Myriel','Champtercier',4],['Baptistine','Magloire',8],
+  ['Fantine','Javert',5],['Fantine','Thenardier',4],['Fantine','Marguerite',3],
+  ['Fantine','Bamatabois',3],['Fantine','Simplice',3],['Fantine','Perpetue',2],
+  ['Cosette','Thenardier',6],['Cosette','Marius',9],['Cosette','Javert',3],['Cosette','Gillenormand',3],
+  ['Marius','Thenardier',5],['Marius','Enjolras',7],['Marius','Gavroche',5],
+  ['Marius','Gillenormand',5],['Marius','Pontmercy',4],['Marius','Courfeyrac',5],
+  ['Marius','Combeferre',3],['Marius','Bossuet',4],
+  ['Enjolras','Gavroche',6],['Enjolras','Courfeyrac',6],['Enjolras','Combeferre',6],
+  ['Enjolras','Bossuet',5],['Enjolras','Joly',4],['Enjolras','Grantaire',4],
+  ['Enjolras','Feuilly',3],['Enjolras','Bahorel',3],
+  ['Gavroche','Thenardier',4],['Gavroche','Courfeyrac',3],['Gavroche','Azelma',2],
+  ['Courfeyrac','Combeferre',5],['Courfeyrac','Bossuet',5],['Courfeyrac','Joly',4],['Courfeyrac','Grantaire',3],
+  ['Combeferre','Bossuet',4],['Combeferre','Joly',3],['Bossuet','Joly',6],
+  ['Bossuet','Grantaire',3],['Joly','Grantaire',3],
+  ['Thenardier','Javert',4],['Thenardier','Azelma',3],['Javert','Bamatabois',2],
+  ['Feuilly','Bahorel',3],['Feuilly','Bossuet',3],['Bahorel','Bossuet',3],
+  ['Simplice','Perpetue',2],['Gillenormand','Pontmercy',2],['Magnon','Toussaint',2],
+].map(([s,t,w])=>({source:s,target:t,weight:w}));
 
-    <!-- SCATTER VIEW -->
-    <div id="scatter-view">
-      <div id="scatter-container">
-        <svg id="scatter-svg"></svg>
-        <div id="tooltip"></div>
-      </div>
+const COMM={
+  'Valjean':0,'Fantine':0,'Javert':0,'Cosette':0,'Marius':0,'Thenardier':0,
+  'Gillenormand':0,'Pontmercy':0,'Fauchelevent':0,'Bamatabois':0,'Toussaint':0,'Magnon':0,'Azelma':0,
+  'Myriel':1,'Baptistine':1,'Magloire':1,'Geborand':1,'Champtercier':1,
+  'Enjolras':2,'Gavroche':2,'Courfeyrac':2,'Combeferre':2,'Bossuet':2,
+  'Joly':2,'Grantaire':2,'Feuilly':2,'Bahorel':2,
+  'Marguerite':3,'Simplice':3,'Perpetue':3,
+};
+const COMM_COLORS=['#f0c060','#60c8f0','#f07080','#80f0b0'];
+const COMM_NAMES=['Main Characters','Myriel Group','Student Rebels','Fantine Circle'];
 
-      <!-- BOTTOM CHARTS -->
-      <div id="bottom-bar">
-        <div class="bottom-chart" id="hist-wrap">
-          <div class="chart-title">Distribution of X-Axis Variable <span class="stag">CONNECT</span></div>
-          <svg id="hist-svg"></svg>
-        </div>
-        <div class="bottom-chart" id="bar-wrap">
-          <div class="chart-title">Average Charges by Group <span class="stag">ABSTRACT</span></div>
-          <svg id="bar-svg"></svg>
-        </div>
-      </div>
-    </div>
+const degMap={};
+LES_LINKS.forEach(l=>{degMap[l.source]=(degMap[l.source]||0)+1;degMap[l.target]=(degMap[l.target]||0)+1;});
+const maxDeg=Math.max(...Object.values(degMap));
+const gColor=id=>COMM_COLORS[COMM[id]??0];
+const gSize=id=>6+(degMap[id]||0)/maxDeg*18;
 
-    <!-- TABLE VIEW -->
-    <div id="table-view">
-      <table id="data-table">
-        <thead>
-          <tr>
-            <th data-col="age">Age ↕</th>
-            <th data-col="sex">Sex</th>
-            <th data-col="bmi">BMI ↕</th>
-            <th data-col="children">Children ↕</th>
-            <th data-col="smoker">Smoker</th>
-            <th data-col="region">Region</th>
-            <th data-col="charges">Charges ↕</th>
-          </tr>
-        </thead>
-        <tbody id="table-body"></tbody>
-      </table>
-    </div>
+// ── TOOLTIP ──────────────────────────────────────────────────
+const ttEl=document.getElementById('tooltip');
+function showTT(e,name,rows){
+  document.getElementById('tt-name').textContent=name;
+  document.getElementById('tt-body').innerHTML=rows.map(([k,v])=>
+    `<div class="tooltip-row">${k}: <span>${v}</span></div>`).join('');
+  ttEl.style.display='block'; moveTT(e);
+}
+function moveTT(e){
+  let x=e.clientX+16,y=e.clientY-10;
+  if(x+220>window.innerWidth)x-=240;
+  if(y+140>window.innerHeight)y-=140;
+  ttEl.style.left=x+'px';ttEl.style.top=y+'px';
+}
+function hideTT(){ttEl.style.display='none';}
 
-  </div><!-- /center -->
+// ── LEGEND ───────────────────────────────────────────────────
+function buildLegend(id,items){
+  document.getElementById(id).innerHTML=items.map(({label,color})=>
+    `<div class="legend-item"><div class="legend-dot" style="background:${color}"></div><span>${label}</span></div>`
+  ).join('');
+}
 
-  <!-- RIGHT PANEL -->
-  <div id="right-panel">
+// ── TREE HELPERS ──────────────────────────────────────────────
+function makeTreeData(){
+  const nodes=new Set();
+  TAXONOMY_EDGES.forEach(([p,c])=>{nodes.add(p);nodes.add(c);});
+  return Array.from(nodes).map(id=>({
+    id, parent: TAXONOMY_EDGES.find(e=>e[1]===id)?.[0]||null
+  }));
+}
 
-    <div class="section-title">Selection <span class="stag">SELECT</span></div>
-    <div id="selection-panel">
-      <div class="hint-text">Click any dot to select.<br>Drag on chart to brush-select multiple.</div>
-    </div>
+// ══════════════════════════════════════════════
+//  TREE LAYOUT 1 — TOP-DOWN HIERARCHICAL
+// ══════════════════════════════════════════════
+function drawTree1(){
+  const el=document.getElementById('svg-tree1');
+  const W=el.parentElement.clientWidth, H=560;
+  el.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const svg=d3.select(el); svg.selectAll('*').remove();
 
-    <div class="section-title" style="margin-top:18px">Detail View <span class="stag">ELABORATE</span></div>
-    <div id="detail-panel">
-      <div class="hint-text">Hover over a dot to see full details here.</div>
-    </div>
+  const root=d3.stratify().id(d=>d.id).parentId(d=>d.parent)(makeTreeData());
+  d3.tree().size([W-80,H-100])(root);
 
-  </div><!-- /right-panel -->
+  const g=svg.append('g').attr('transform','translate(40,50)');
 
-</div><!-- /app -->
+  g.selectAll('.lnk').data(root.links()).join('line')
+    .attr('x1',d=>d.source.x).attr('y1',d=>d.source.y)
+    .attr('x2',d=>d.target.x).attr('y2',d=>d.target.y)
+    .attr('stroke','#1e2640').attr('stroke-width',1.2);
 
-<script src="main.js"></script>
+  const node=g.selectAll('.nd').data(root.descendants()).join('g')
+    .attr('transform',d=>`translate(${d.x},${d.y})`)
+    .style('cursor','pointer')
+    .on('mouseover',(e,d)=>showTT(e,d.id,[
+      ['Rank',LEVEL_NAMES[LEVEL_MAP[d.id]??3]],
+      ['Depth',d.depth],
+      ['Children',d.children?d.children.length:0]
+    ]))
+    .on('mousemove',moveTT).on('mouseout',hideTT);
+
+  node.append('circle')
+    .attr('r',d=>tSize(d.id))
+    .attr('fill',d=>tColor(d.id))
+    .attr('stroke','#080b14').attr('stroke-width',1.5).attr('fill-opacity',0.92);
+
+  node.append('text')
+    .attr('dy',d=>d.children?-tSize(d.id)-4:tSize(d.id)+10)
+    .attr('text-anchor','middle')
+    .attr('font-size',d=>LEVEL_MAP[d.id]<=2?9:7)
+    .attr('fill',d=>LEVEL_MAP[d.id]<=2?'#dde2f0':'#7a80a0')
+    .attr('font-family','JetBrains Mono,monospace')
+    .text(d=>d.id);
+
+  buildLegend('legend-tree1',LEVEL_NAMES.map((n,i)=>({label:n,color:LEVEL_COLORS[i]})));
+}
+
+// ══════════════════════════════════════════════
+//  TREE LAYOUT 2 — RADIAL
+// ══════════════════════════════════════════════
+function drawTree2(){
+  const el=document.getElementById('svg-tree2');
+  const W=el.parentElement.clientWidth, H=640;
+  const cx=W/2, cy=H/2;
+  el.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const svg=d3.select(el); svg.selectAll('*').remove();
+
+  const root=d3.stratify().id(d=>d.id).parentId(d=>d.parent)(makeTreeData());
+  const radius=Math.min(W,H)/2-70;
+  d3.tree().size([2*Math.PI,radius])
+    .separation((a,b)=>(a.parent===b.parent?1:2)/a.depth)(root);
+
+  const g=svg.append('g').attr('transform',`translate(${cx},${cy})`);
+
+  const linkGen=d3.linkRadial().angle(d=>d.x).radius(d=>d.y);
+  g.selectAll('.lnk').data(root.links()).join('path')
+    .attr('d',linkGen).attr('fill','none')
+    .attr('stroke','#1e2640').attr('stroke-width',1.2);
+
+  const node=g.selectAll('.nd').data(root.descendants()).join('g')
+    .attr('transform',d=>`rotate(${d.x*180/Math.PI-90}) translate(${d.y},0)`)
+    .style('cursor','pointer')
+    .on('mouseover',(e,d)=>showTT(e,d.id,[
+      ['Rank',LEVEL_NAMES[LEVEL_MAP[d.id]??3]],
+      ['Depth',d.depth],
+      ['Children',d.children?d.children.length:0]
+    ]))
+    .on('mousemove',moveTT).on('mouseout',hideTT);
+
+  node.append('circle')
+    .attr('r',d=>tSize(d.id))
+    .attr('fill',d=>tColor(d.id))
+    .attr('stroke','#080b14').attr('stroke-width',1).attr('fill-opacity',0.92);
+
+  node.append('text')
+    .attr('dy','0.31em')
+    .attr('x',d=>d.x<Math.PI===!d.children?8:-8)
+    .attr('text-anchor',d=>d.x<Math.PI===!d.children?'start':'end')
+    .attr('transform',d=>d.x>=Math.PI?'rotate(180)':null)
+    .attr('font-size',d=>LEVEL_MAP[d.id]<=2?8:6.5)
+    .attr('fill',d=>LEVEL_MAP[d.id]<=2?'#dde2f0':'#7a80a0')
+    .attr('font-family','JetBrains Mono,monospace')
+    .text(d=>d.id);
+
+  buildLegend('legend-tree2',LEVEL_NAMES.map((n,i)=>({label:n,color:LEVEL_COLORS[i]})));
+}
+
+// ══════════════════════════════════════════════
+//  GRAPH LAYOUT 1 — FORCE-DIRECTED
+// ══════════════════════════════════════════════
+function drawGraph1(){
+  const el=document.getElementById('svg-graph1');
+  const W=el.parentElement.clientWidth, H=580;
+  el.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const svg=d3.select(el); svg.selectAll('*').remove();
+
+  const nodes=LES_NODES.map(d=>({...d}));
+  const links=LES_LINKS.map(d=>({...d}));
+
+  const sim=d3.forceSimulation(nodes)
+    .force('link',d3.forceLink(links).id(d=>d.id).distance(d=>80-d.weight*3).strength(0.5))
+    .force('charge',d3.forceManyBody().strength(-250))
+    .force('center',d3.forceCenter(W/2,H/2))
+    .force('collision',d3.forceCollide().radius(d=>gSize(d.id)+6));
+
+  const g=svg.append('g');
+  svg.call(d3.zoom().scaleExtent([0.3,3]).on('zoom',e=>g.attr('transform',e.transform)));
+
+  const link=g.selectAll('.lnk').data(links).join('line')
+    .attr('stroke','#1e2640')
+    .attr('stroke-width',d=>d.weight*0.35)
+    .attr('stroke-opacity',0.8);
+
+  const node=g.selectAll('.nd').data(nodes).join('g')
+    .style('cursor','grab')
+    .call(d3.drag()
+      .on('start',(e,d)=>{if(!e.active)sim.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y;})
+      .on('drag',(e,d)=>{d.fx=e.x;d.fy=e.y;})
+      .on('end',(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null;})
+    )
+    .on('mouseover',(e,d)=>showTT(e,d.id,[
+      ['Community',COMM_NAMES[COMM[d.id]??0]],
+      ['Connections',degMap[d.id]||0],
+      ['Centrality',((degMap[d.id]||0)/maxDeg*100).toFixed(0)+'%'],
+    ]))
+    .on('mousemove',moveTT).on('mouseout',hideTT);
+
+  node.append('circle')
+    .attr('r',d=>gSize(d.id))
+    .attr('fill',d=>gColor(d.id))
+    .attr('stroke','#080b14').attr('stroke-width',1.5).attr('fill-opacity',0.9);
+
+  node.append('text').attr('dy','0.32em').attr('text-anchor','middle')
+    .attr('font-size',d=>gSize(d.id)>12?8:6.5)
+    .attr('fill','#080b14')
+    .attr('font-family','JetBrains Mono,monospace').attr('font-weight','500')
+    .text(d=>d.id);
+
+  sim.on('tick',()=>{
+    link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y)
+        .attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+    node.attr('transform',d=>`translate(${d.x},${d.y})`);
+  });
+
+  buildLegend('legend-graph1',COMM_NAMES.map((n,i)=>({label:n,color:COMM_COLORS[i]})));
+}
+
+// ══════════════════════════════════════════════
+//  GRAPH LAYOUT 2 — CIRCULAR
+// ══════════════════════════════════════════════
+function drawGraph2(){
+  const el=document.getElementById('svg-graph2');
+  const W=el.parentElement.clientWidth, H=580;
+  const cx=W/2, cy=H/2, R=Math.min(W,H)/2-80;
+  el.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const svg=d3.select(el); svg.selectAll('*').remove();
+
+  // Sort by community
+  const sorted=[...LES_NODES].sort((a,b)=>(COMM[a.id]??0)-(COMM[b.id]??0));
+  const pos={};
+  sorted.forEach((n,i)=>{
+    const a=(i/sorted.length)*2*Math.PI-Math.PI/2;
+    pos[n.id]={x:cx+R*Math.cos(a),y:cy+R*Math.sin(a),a};
+  });
+
+  const g=svg.append('g');
+
+  const link=g.selectAll('.lnk').data(LES_LINKS).join('line')
+    .attr('x1',d=>pos[d.source]?.x).attr('y1',d=>pos[d.source]?.y)
+    .attr('x2',d=>pos[d.target]?.x).attr('y2',d=>pos[d.target]?.y)
+    .attr('stroke',d=>gColor(d.source))
+    .attr('stroke-width',d=>d.weight*0.28)
+    .attr('stroke-opacity',0.22);
+
+  const node=g.selectAll('.nd').data(sorted).join('g')
+    .attr('transform',d=>`translate(${pos[d.id].x},${pos[d.id].y})`)
+    .style('cursor','pointer')
+    .on('mouseover',(e,d)=>{
+      link.attr('stroke-opacity',l=>
+        (l.source===d.id||l.target===d.id)?0.9:0.05);
+      showTT(e,d.id,[
+        ['Community',COMM_NAMES[COMM[d.id]??0]],
+        ['Connections',degMap[d.id]||0],
+        ['Centrality',((degMap[d.id]||0)/maxDeg*100).toFixed(0)+'%'],
+      ]);
+    })
+    .on('mousemove',moveTT)
+    .on('mouseout',()=>{link.attr('stroke-opacity',0.22);hideTT();});
+
+  node.append('circle')
+    .attr('r',d=>gSize(d.id))
+    .attr('fill',d=>gColor(d.id))
+    .attr('stroke','#080b14').attr('stroke-width',1.5).attr('fill-opacity',0.92);
+
+  node.append('text').attr('dy','0.32em')
+    .each(function(d){
+      const ang=Math.atan2(pos[d.id].y-cy,pos[d.id].x-cx);
+      const flip=pos[d.id].x<cx;
+      const off=gSize(d.id)+5;
+      d3.select(this)
+        .attr('transform',`translate(${Math.cos(ang)*off},${Math.sin(ang)*off}) rotate(${flip?ang*180/Math.PI+180:ang*180/Math.PI})`)
+        .attr('text-anchor',flip?'end':'start');
+    })
+    .attr('font-size',7).attr('fill','#9aa0c0')
+    .attr('font-family','JetBrains Mono,monospace')
+    .text(d=>d.id);
+
+  buildLegend('legend-graph2',COMM_NAMES.map((n,i)=>({label:n,color:COMM_COLORS[i]})));
+}
+
+// ── NAV ACTIVE ────────────────────────────────────────────────
+const navAs=document.querySelectorAll('nav a');
+window.addEventListener('scroll',()=>{
+  ['tree1','tree2','graph1','graph2'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){
+      const top=el.getBoundingClientRect().top;
+      if(top<=100) navAs.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+id));
+    }
+  });
+});
+
+// ── INIT ──────────────────────────────────────────────────────
+function initAll(){drawTree1();drawTree2();drawGraph1();drawGraph2();}
+window.addEventListener('load',initAll);
+window.addEventListener('resize',initAll);
+</script>
 </body>
 </html>
